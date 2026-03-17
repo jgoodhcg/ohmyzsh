@@ -1,6 +1,8 @@
 # Custom Zsh init - sourced by .zshrc
-# Add this line to your ~/.zshrc:
-# source ~/.config/ohmyzsh/init.zsh
+# Add this to your ~/.zshrc:
+# if [ -f ~/.config/ohmyzsh/init.zsh ]; then
+#   source ~/.config/ohmyzsh/init.zsh
+# fi
 
 export EDITOR=nvim
 
@@ -51,3 +53,56 @@ _tps_completion() {
 }
 
 compdef _tps_completion tps
+
+
+# tpw = "tmux project worktree"
+# Usage: tpw <project> <worktree-label>
+#
+# What it does:
+# 1. Discovers projects that have a .worktrees directory:
+#      ~/projects/<project>.worktrees/
+# 2. cd's into ~/projects/<project>.worktrees/<label>
+# 3. Creates a detached tmux session named "<project>.<label>"
+# 4. Returns you to ~
+#
+# It does NOT attach. It only ensures the session exists.
+
+tpw() {
+  local project="$1"
+  local label="$2"
+
+  if [[ -z "$project" || -z "$label" ]]; then
+    echo "Usage: tpw <project> <worktree-label>"
+    return 1
+  fi
+
+  local dir="$HOME/projects/$project.worktrees/$label"
+  if [[ ! -d "$dir" ]]; then
+    echo "Worktree not found: $dir"
+    return 1
+  fi
+
+  cd "$dir" || return
+  tmux new-session -d -s "$project.$label" 2>/dev/null
+  cd "$HOME"
+}
+
+_tpw_completion() {
+  local -a worktree_dirs projects
+  worktree_dirs=(${HOME}/projects/*.worktrees(/:t))
+
+  if (( CURRENT == 2 )); then
+    # First arg: complete project names (strip .worktrees suffix)
+    projects=(${worktree_dirs%.worktrees})
+    compadd -- $projects
+  elif (( CURRENT == 3 )); then
+    # Second arg: complete worktree labels for the chosen project
+    local project="$words[2]"
+    local wt_dir="$HOME/projects/$project.worktrees"
+    if [[ -d "$wt_dir" ]]; then
+      compadd -- ${wt_dir}/*(/:t)
+    fi
+  fi
+}
+
+compdef _tpw_completion tpw
