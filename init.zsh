@@ -6,6 +6,14 @@
 
 export EDITOR=nvim
 
+# Kill macOS mediaanalysisd processes that peg the CPU.
+# On this 2020 MacBook Pro (work machine, recently updated macOS),
+# mediaanalysisd and mediaanalysisd-access consume excessive CPU
+# and make the machine virtually unusable.
+# SIGSTOP (-STOP) suspends them without terminating, so they don't
+# just respawn immediately.
+alias killmedia='killall -STOP mediaanalysisd mediaanalysisd-access'
+
 
 # tps = "tmux project session"
 # Usage: tps <project-name>
