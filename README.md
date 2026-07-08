@@ -32,9 +32,9 @@ Same idea, but for git worktrees. Tab-completable at both the project and worktr
 tpw <project> <worktree-label>
 ```
 
-Looks for `~/projects/<project>.worktrees/<label>`, creates a tmux session named `<project>.<label>`.
+Looks for `~/projects/<project>.worktrees/<label>`, creates a tmux session named `<project>.<label>` (slashes in the label become dashes).
 
-Any project with a `<name>.worktrees/` directory in `~/projects/` is auto-discovered.
+Any project with a `<name>.worktrees/` directory in `~/projects/` is auto-discovered. Labels may contain slashes — GitKraken and friends create worktrees for branches like `feat/13396-e-sig` in nested subdirectories, and both `tpw` and its completion handle them (completion probes up to 3 levels deep for directories containing a `.git` entry).
 
 ## Expected directory layout
 
@@ -46,4 +46,6 @@ Any project with a `<name>.worktrees/` directory in `~/projects/` is auto-discov
   myapp.worktrees/
     bug-fix/                # worktree         (tpw myapp bug-fix)
     feature-x/              # worktree         (tpw myapp feature-x)
+    feat/
+      13396-e-sig/          # worktree         (tpw myapp feat/13396-e-sig)
 ```

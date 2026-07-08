@@ -73,6 +73,9 @@ compdef _tps_completion tps
 # 3. Creates a detached tmux session named "<project>.<label>"
 # 4. Returns you to ~
 #
+# Labels may contain slashes: tools like GitKraken create worktrees for
+# branches such as feat/13396-e-sig at <project>.worktrees/feat/13396-e-sig.
+#
 # It does NOT attach. It only ensures the session exists.
 
 tpw() {
@@ -90,8 +93,10 @@ tpw() {
     return 1
   fi
 
+  # Flatten slashes in the session name; tmux would keep them but they read
+  # poorly and collide with pane/window target syntax in some commands.
   cd "$dir" || return
-  tmux new-session -d -s "$project.$label" 2>/dev/null
+  tmux new-session -d -s "$project.${label//\//-}" 2>/dev/null
   cd "$HOME"
 }
 
@@ -104,11 +109,21 @@ _tpw_completion() {
     projects=(${worktree_dirs%.worktrees})
     compadd -- $projects
   elif (( CURRENT == 3 )); then
-    # Second arg: complete worktree labels for the chosen project
+    # Second arg: complete worktree labels for the chosen project.
+    # A worktree is any directory containing a .git entry (a file for linked
+    # worktrees). Labels from slashed branch names nest a few levels deep,
+    # so probe to depth 3 rather than globbing ** (which would walk every
+    # node_modules on each tab press).
     local project="$words[2]"
     local wt_dir="$HOME/projects/$project.worktrees"
     if [[ -d "$wt_dir" ]]; then
-      compadd -- ${wt_dir}/*(/:t)
+      local -a labels
+      labels=(
+        ${wt_dir}/*/.git(N:h)
+        ${wt_dir}/*/*/.git(N:h)
+        ${wt_dir}/*/*/*/.git(N:h)
+      )
+      compadd -- ${labels#${wt_dir}/}
     fi
   fi
 }
